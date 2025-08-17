@@ -8,7 +8,7 @@
 > A decentralized, transparent, and auditable system for managing fishing quotas and tracking catches using blockchain technology
 
 <!-- Add hero image or demo GIF here -->
-![Project Demo](https://via.placeholder.com/800x400/5546FF/FFFFFF?text=Fisheries+Quota+Tracking+System)
+
 
 ## 🌊 About The Project
 
@@ -172,13 +172,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Stacks Documentation](https://docs.stacks.co/)
 - [Clarity Language Reference](https://docs.stacks.co/clarity/)
 - [Clarinet Documentation](https://github.com/hirosystems/clarinet)
-
-
-
-<div align="center">
-
-**Built for sustainable fishing communities**
-
-[⭐ Star this repo](https://github.com/your-username/Community-Managed-Fisheries-and-Catch-Quota-Tracking-System/stargazers) • [🍴 Fork it](https://github.com/your-username/Community-Managed-Fisheries-and-Catch-Quota-Tracking-System/fork) • 
-
-</div>
