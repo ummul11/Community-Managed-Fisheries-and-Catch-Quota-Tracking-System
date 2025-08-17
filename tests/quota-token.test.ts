@@ -4,7 +4,7 @@
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 declare const simnet: any;
 import { describe, it, expect, beforeAll } from "vitest";
-import { uintCV, principalCV, ClarityType, cvToString } from "@stacks/transactions";
+import { uintCV, principalCV, noneCV, ClarityType, cvToString } from "@stacks/transactions";
 
 // The environment is provided by vitest-environment-clarinet
 // global `simnet` is available for deploying and calling contracts.
@@ -33,23 +33,130 @@ describe("quota-token", () => {
     }
   }
 
+  it("implements SIP-010 standard functions", () => {
+    const accounts = simnet.getAccounts();
+    const deployer = accounts.get("deployer");
+    
+    // Test SIP-010 metadata functions
+    const name = simnet.callReadOnlyFn(CONTRACT, "get-name", [], deployer).result;
+    expect(cvToString(name)).toBe('(ok "Fishing Quota Token")');
+    
+    const symbol = simnet.callReadOnlyFn(CONTRACT, "get-symbol", [], deployer).result;
+    expect(cvToString(symbol)).toBe('(ok "QUOTA")');
+    
+    const decimals = simnet.callReadOnlyFn(CONTRACT, "get-decimals", [], deployer).result;
+    expect(cvToString(decimals)).toBe("(ok u6)");
+    
+    const tokenUri = simnet.callReadOnlyFn(CONTRACT, "get-token-uri", [], deployer).result;
+    expect(cvToString(tokenUri)).toBe('(ok (some "https://fisheries.example.com/quota-token-metadata.json"))');
+  });
+
+  it("implements governance timelock for TAC changes", () => {
+    const accounts = simnet.getAccounts();
+    const deployer = accounts.get("deployer");
+    initAdminAndMint(deployer);
+
+    // Propose new TAC
+    let res = simnet.callPublicFn(CONTRACT, "propose-tac", [uintCV(5000)], deployer);
+    expect(res.result.type).toBe(ClarityType.ResponseOk);
+
+    // Cannot execute immediately
+    res = simnet.callPublicFn(CONTRACT, "execute-tac-proposal", [], deployer);
+    expect(res.result.type).toBe(ClarityType.ResponseErr);
+
+    // Check timelock status
+    const isReady = simnet.callReadOnlyFn(CONTRACT, "is-tac-timelock-ready", [], deployer).result;
+    expect(cvToString(isReady)).toBe("false");
+
+    // Mine blocks to simulate timelock passage (144 blocks)
+    simnet.mineEmptyBlocks(145);
+
+    // Now timelock should be ready
+    const isReadyAfter = simnet.callReadOnlyFn(CONTRACT, "is-tac-timelock-ready", [], deployer).result;
+    expect(cvToString(isReadyAfter)).toBe("true");
+
+    // Execute proposal
+    res = simnet.callPublicFn(CONTRACT, "execute-tac-proposal", [], deployer);
+    expect(res.result.type).toBe(ClarityType.ResponseOk);
+
+    // Verify TAC was updated
+    const newTac = simnet.callReadOnlyFn(CONTRACT, "get-tac", [], deployer).result;
+    expect(cvToString(newTac)).toBe("u5000");
+  });
+
   it("allows admin to set TAC and mint within limits", () => {
     const accounts = simnet.getAccounts();
     const deployer = accounts.get("deployer");
-  initAdminAndMint(deployer);
+    initAdminAndMint(deployer);
 
-  const ownerBal = simnet.callReadOnlyFn(CONTRACT, "get-balance", [principalCV(deployer)], deployer).result;
-  expect(cvToString(ownerBal)).toBe("u600");
+    const ownerBal = simnet.callReadOnlyFn(CONTRACT, "get-balance", [principalCV(deployer)], deployer).result;
+    expect(cvToString(ownerBal)).toBe("(ok u600)");
 
     // cannot exceed TAC
-  // tighten TAC to 1000 so 600 + 500 exceeds
-  let res = simnet.callPublicFn(CONTRACT, "set-tac", [uintCV(1000)], deployer);
-  expect(res.result.type).toBe(ClarityType.ResponseOk);
-  res = simnet.callPublicFn(CONTRACT, "mint-quota", [uintCV(500)], deployer);
-  expect(res.result.type).toBe(ClarityType.ResponseErr);
+    // tighten TAC to 1000 so 600 + 500 exceeds
+    let res = simnet.callPublicFn(CONTRACT, "set-tac", [uintCV(1000)], deployer);
+    expect(res.result.type).toBe(ClarityType.ResponseOk);
+    res = simnet.callPublicFn(CONTRACT, "mint-quota", [uintCV(500)], deployer);
+    expect(res.result.type).toBe(ClarityType.ResponseErr);
   });
 
-  it("allocates to a fisher and supports burn on catch", () => {
+  it("supports SIP-010 transfer function", () => {
+    const accounts = simnet.getAccounts();
+    const deployer = accounts.get("deployer");
+    const alice = accounts.get("wallet_1");
+    const bob = accounts.get("wallet_2");
+    initAdminAndMint(deployer);
+    
+    // Allocate tokens to Alice
+    let res = simnet.callPublicFn(CONTRACT, "allocate-quota", [principalCV(alice), uintCV(100)], deployer);
+    expect(res.result.type).toBe(ClarityType.ResponseOk);
+
+    // Alice transfers to Bob using SIP-010 transfer
+    res = simnet.callPublicFn(CONTRACT, "transfer", [uintCV(25), principalCV(alice), principalCV(bob), noneCV()], alice);
+    expect(res.result.type).toBe(ClarityType.ResponseOk);
+
+    const bobBal = simnet.callReadOnlyFn(CONTRACT, "get-balance", [principalCV(bob)], bob).result;
+    expect(cvToString(bobBal)).toBe("(ok u25)");
+  });
+
+  it("implements governance timelock for TAC changes", () => {
+    const accounts = simnet.getAccounts();
+    const deployer = accounts.get("deployer");
+    initAdminAndMint(deployer);
+
+    // Propose new TAC
+    let res = simnet.callPublicFn(CONTRACT, "propose-tac", [uintCV(3000)], deployer);
+    expect(res.result.type).toBe(ClarityType.ResponseOk);
+
+    // Cannot execute immediately
+    res = simnet.callPublicFn(CONTRACT, "execute-tac-proposal", [], deployer);
+    expect(res.result.type).toBe(ClarityType.ResponseErr);
+
+    // Advance blocks past timelock
+    simnet.mineEmptyBlocks(144);
+
+    // Now can execute
+    res = simnet.callPublicFn(CONTRACT, "execute-tac-proposal", [], deployer);
+    expect(res.result.type).toBe(ClarityType.ResponseOk);
+    
+    // Verify TAC was updated
+    const tac = simnet.callReadOnlyFn(CONTRACT, "get-tac", [], deployer).result;
+    expect(cvToString(tac)).toBe("u3000");
+  });
+
+  it("implements SIP-010 metadata functions", () => {
+    const accounts = simnet.getAccounts();
+    const deployer = accounts.get("deployer");
+
+    const name = simnet.callReadOnlyFn(CONTRACT, "get-name", [], deployer).result;
+    expect(cvToString(name)).toBe('(ok "Fishing Quota Token")');
+
+    const symbol = simnet.callReadOnlyFn(CONTRACT, "get-symbol", [], deployer).result;
+    expect(cvToString(symbol)).toBe('(ok "QUOTA")');
+
+    const decimals = simnet.callReadOnlyFn(CONTRACT, "get-decimals", [], deployer).result;
+    expect(cvToString(decimals)).toBe("(ok u6)");
+  });  it("allocates to a fisher and supports burn on catch", () => {
   const accounts = simnet.getAccounts();
   const deployer = accounts.get("deployer");
   const alice = accounts.get("wallet_1");
@@ -60,17 +167,17 @@ describe("quota-token", () => {
   expect(res.result.type).toBe(ClarityType.ResponseOk);
 
   const aliceBal = simnet.callReadOnlyFn(CONTRACT, "get-balance", [principalCV(alice)], alice).result;
-  expect(cvToString(aliceBal)).toBe("u200");
+  expect(cvToString(aliceBal)).toBe("(ok u200)");
 
     // alice burns 50 after catch
   res = simnet.callPublicFn(CONTRACT, "burn-quota", [uintCV(50)], alice);
   expect(res.result.type).toBe(ClarityType.ResponseOk);
 
   const aliceBalAfter = simnet.callReadOnlyFn(CONTRACT, "get-balance", [principalCV(alice)], alice).result;
-  expect(cvToString(aliceBalAfter)).toBe("u150");
+  expect(cvToString(aliceBalAfter)).toBe("(ok u150)");
 
   const totalSupply = simnet.callReadOnlyFn(CONTRACT, "get-total-supply", [], deployer).result;
-  expect(cvToString(totalSupply)).toBe("u550"); // minted 600, burned 50
+  expect(cvToString(totalSupply)).toBe("(ok u550)"); // minted 600, burned 50
   });
 
   it("supports peer-to-peer transfer between fishers", () => {
@@ -87,7 +194,7 @@ describe("quota-token", () => {
   expect(res.result.type).toBe(ClarityType.ResponseOk);
 
   const bobBal = simnet.callReadOnlyFn(CONTRACT, "get-balance", [principalCV(bob)], bob).result;
-  expect(cvToString(bobBal)).toBe("u25");
+  expect(cvToString(bobBal)).toBe("(ok u25)");
   });
 
   it("prevents unauthorized actions and insufficient balances", () => {

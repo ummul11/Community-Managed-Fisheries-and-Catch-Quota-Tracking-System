@@ -162,9 +162,6 @@ We welcome contributions from the community! Please follow these steps:
 - Update documentation as needed
 - Ensure all tests pass before submitting
 
-### Code of Conduct
-
-Please read our [Code of Conduct](CODE_OF_CONDUCT.md) to understand our community guidelines.
 
 ## 📄 License
 
@@ -175,22 +172,13 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Stacks Documentation](https://docs.stacks.co/)
 - [Clarity Language Reference](https://docs.stacks.co/clarity/)
 - [Clarinet Documentation](https://github.com/hirosystems/clarinet)
-- [Project Issues](https://github.com/your-username/Community-Managed-Fisheries-and-Catch-Quota-Tracking-System/issues)
 
-## 📞 Support
 
-If you have questions or need help:
-
-- 📧 Email: [support@example.com](mailto:support@example.com)
-- 💬 Discord: [Join our community](https://discord.gg/example)
-- 🐛 Issues: [Report bugs](https://github.com/your-username/Community-Managed-Fisheries-and-Catch-Quota-Tracking-System/issues)
-
----
 
 <div align="center">
 
-**Built with ❤️ for sustainable fishing communities**
+**Built for sustainable fishing communities**
 
-[⭐ Star this repo](https://github.com/your-username/Community-Managed-Fisheries-and-Catch-Quota-Tracking-System/stargazers) • [🍴 Fork it](https://github.com/your-username/Community-Managed-Fisheries-and-Catch-Quota-Tracking-System/fork) • [📝 Contribute](https://github.com/your-username/Community-Managed-Fisheries-and-Catch-Quota-Tracking-System/blob/main/CONTRIBUTING.md)
+[⭐ Star this repo](https://github.com/your-username/Community-Managed-Fisheries-and-Catch-Quota-Tracking-System/stargazers) • [🍴 Fork it](https://github.com/your-username/Community-Managed-Fisheries-and-Catch-Quota-Tracking-System/fork) • 
 
 </div>
