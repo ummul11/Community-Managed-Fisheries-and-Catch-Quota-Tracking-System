@@ -5,9 +5,21 @@ authors = []
 telemetry = true
 cache_dir = "./.cache"
 
-# [contracts.counter]
-# path = "contracts/counter.clar"
-# epoch = "latest"
+[contracts.quota-token]
+path = "contracts/quota-token.clar"
+epoch = "latest"
+
+[contracts.fishermen-registry]
+path = "contracts/fishermen-registry.clar"
+epoch = "latest"
+
+[contracts.fisheries-management]
+path = "contracts/fisheries-management.clar"
+epoch = "latest"
+
+[contracts.quota-marketplace]
+path = "contracts/quota-marketplace.clar"
+epoch = "latest"
 
 [repl.analysis]
 passes = ["check_checker"]
